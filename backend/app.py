@@ -3,6 +3,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import cv2
 import os
+import base64
 import json
 from collections import Counter
 from tensorflow.keras.models import load_model
@@ -538,23 +539,76 @@ from fastapi.responses import JSONResponse
 import shutil
 
 app = FastAPI()
+app = FastAPI()
+
+# Define disease classes
+DISEASE_CLASSES = [
+    'Bacterial Leaf Blight', 'Brown Spot', 'Leaf Blast', 
+    'Leaf scald', 'Narrow Brown Leaf Spot', 'Neck_Blast', 
+    'Rice Hispa', 'Sheath Blight'
+]
+HEALTHY_CLASS = "Healthy Rice Leaf"
 
 @app.post("/analyze")
 async def analyze_image(file: UploadFile = File(...)):
-    # Save uploaded file to a temp location
     temp_dir = "temp_uploads"
     os.makedirs(temp_dir, exist_ok=True)
+
     temp_path = os.path.join(temp_dir, file.filename)
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Run analysis
+    # Run your model
     output_dir = generate_multi_model_explanations(temp_path, models, class_labels)
 
-    # Optionally, cleanup temp file
+    # Read report file
+    report_file = os.path.join(output_dir, "multi_model_analysis_report.txt")
+    report_content = None
+    if os.path.exists(report_file):
+        with open(report_file, "r") as f:
+            report_content = f.read()
+
+    # Read summary file
+    summary_file = os.path.join(output_dir, "multi_model_summary.json")
+    summary_content = None
+    disease_name = "Unknown"
+    status_code = 2  # default "Not Paddy"
+
+    if os.path.exists(summary_file):
+        with open(summary_file, "r") as f:
+            summary_content = f.read()
+
+        try:
+            summary_json = json.loads(summary_content)
+            disease_name = summary_json.get("final_prediction", "Unknown")
+
+            # Assign status code
+            if disease_name == HEALTHY_CLASS:
+                status_code = 0
+            elif disease_name in DISEASE_CLASSES:
+                status_code = 1
+            else:
+                status_code = 2
+        except Exception:
+            pass
+
+    # Encode images to base64
+    image_data = {}
+    for fname in os.listdir(output_dir):
+        if fname.endswith(".png"):
+            with open(os.path.join(output_dir, fname), "rb") as img_f:
+                b64_img = base64.b64encode(img_f.read()).decode("utf-8")
+                image_data[fname] = b64_img
+
+    # Clean temp
     os.remove(temp_path)
 
-    return JSONResponse(content={"output_json":{ output_dir} / "multi_model_analysis_report.txt"})
+    response = {
+        "disease": disease_name,
+        "status_code": status_code,   # New mapped key
+        "report": report_content,
+        "summary": summary_content,
+        "images": image_data
+    }
 
-    
-    
+    return JSONResponse(content=response)    
