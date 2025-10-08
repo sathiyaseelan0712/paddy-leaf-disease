@@ -1,0 +1,140 @@
+{
+  "lang_eng": "ENG",
+  "lang_ta": "தமிழ்",
+  "starting": {
+    "welcome_user": "Welcome ",
+    "welcome_back": "We’re Glad to see you back!!!",
+    "get_start": "Get Start"
+  },
+  "home": {
+    "scan_title1": "Scan the LEAF and",
+    "scan_title2": "find the Disease..",
+    "reveal_title1": "Reveal the Tree Behind",
+    "reveal_title2": "Every Leaf Effortlessly!",
+    "instruction1": "Simply Tap the Scan Button",
+    "instruction2": "Below and Point at the Leaf to",
+    "instruction3": "Identify the affected disease"
+  },
+  "camera_screen": {
+    "take_photo": "SCAN THE PADDY LEAF"
+  },
+  "verify_photo": {
+    "title": "Verify Photo",
+    "subtitle": "Is this the photo you want to upload?",
+    "retake": "RETAKE",
+    "upload": "UPLOAD"
+  },
+  "happy_screen": {
+    "title": "Great! Your Paddy Leaf is Healthy",
+    "subtitle": "Keep up the good work and continue to care for your plants.",
+    "done": "DONE",
+    "scan_again": "SCAN AGAIN"
+  },
+  "not_paddy": {
+    "title": "Not a Paddy Leaf",
+    "subtitle": "Please upload a valid paddy leaf image for analysis.",
+    "scan_again": "SCAN AGAIN"
+  },
+  "disease_screen": {
+    "header": "Hurray, we identified the disease!",
+    "toggle_section_A": "DESCRIPTION",
+    "toggle_section_B": "IMAGES",
+    "treatment": "TREATMENT & PREVENTION",
+    "scan_again": "SCAN AGAIN",
+    "prevention_tips": "Prevention Tips",
+    "treatment_tips": "Treatment Tips",
+    "summary": "AI Report"
+  },
+  "diseases": {
+    "Bacterial Leaf Blight": {
+      "diseaseName": "Bacterial Leaf Blight",
+      "description": "Caused by Xanthomonas oryzae pv. oryzae. It starts as water-soaked streaks that turn yellow, causing wilting and drying of leaves.",
+      "prevention1": "🌱 Use resistant rice varieties.",
+      "prevention2": "🌱 Avoid excessive nitrogen application.",
+      "prevention3": "🌱 Remove and destroy crop residues.",
+      "treatment1": "💊 Spray copper-based bactericides.",
+      "treatment2": "💊 Apply Streptomycin with Copper Oxychloride.",
+      "treatment3": "💊 Remove heavily infected plants."
+    },
+    "Brown Spot": {
+      "diseaseName": "Brown Spot",
+      "description": "Caused by Bipolaris oryzae fungus. It forms circular brown spots on leaves, reducing photosynthesis and grain yield.",
+      "prevention1": "🌱 Treat seeds with fungicide before sowing.",
+      "prevention2": "🌱 Avoid continuous rice cropping.",
+      "prevention3": "🌱 Apply balanced fertilizers with nitrogen and potassium.",
+      "treatment1": "💊 Spray Mancozeb or Carbendazim.",
+      "treatment2": "💊 Apply potassium foliar sprays.",
+      "treatment3": "💊 Maintain field sanitation and remove weeds."
+    },
+    "Healthy Rice Leaf": {
+      "diseaseName": "Healthy Rice Leaf",
+      "description": "The rice leaf is healthy, green, and free from visible disease symptoms.",
+      "prevention1": "🌱 Inspect fields regularly.",
+      "prevention2": "🌱 Maintain proper irrigation.",
+      "prevention3": "🌱 Use balanced fertilizers and keep fields clean.",
+      "treatment1": "💊 No treatment required.",
+      "treatment2": "💊 Continue standard farming practices.",
+      "treatment3": "💊 Monitor fields for early disease detection."
+    },
+    "Leaf Blast": {
+      "diseaseName": "Leaf Blast",
+      "description": "Caused by Magnaporthe oryzae fungus. It creates spindle-shaped lesions with gray centers and brown edges.",
+      "prevention1": "🌱 Plant resistant rice varieties.",
+      "prevention2": "🌱 Avoid dense planting.",
+      "prevention3": "🌱 Limit nitrogen fertilizer application.",
+      "treatment1": "💊 Spray Tricyclazole or Isoprothiolane.",
+      "treatment2": "💊 Apply Carbendazim in early stages.",
+      "treatment3": "💊 Use systemic fungicides for severe cases."
+    },
+    "Leaf scald": {
+      "diseaseName": "Leaf scald",
+      "description": "Caused by Microdochium oryzae fungus. It shows water-soaked lesions that spread along veins, causing drying.",
+      "prevention1": "🌱 Rotate crops to avoid buildup.",
+      "prevention2": "🌱 Prevent drought and water stress.",
+      "prevention3": "🌱 Use resistant varieties.",
+      "treatment1": "💊 Spray Propiconazole or Tricyclazole.",
+      "treatment2": "💊 Remove infected leaves.",
+      "treatment3": "💊 Maintain balanced soil fertility."
+    },
+    "Narrow Brown Leaf Spot": {
+      "diseaseName": "Narrow Brown Leaf Spot",
+      "description": "Caused by Cercospora oryzae fungus. It forms narrow, linear brown lesions parallel to veins.",
+      "prevention1": "🌱 Grow resistant varieties.",
+      "prevention2": "🌱 Reduce plant density.",
+      "prevention3": "🌱 Avoid late planting.",
+      "treatment1": "💊 Spray Mancozeb or Carbendazim.",
+      "treatment2": "💊 Apply organic manure to improve soil.",
+      "treatment3": "💊 Remove plant residues from field."
+    },
+    "Neck Blast": {
+      "diseaseName": "Neck Blast",
+      "description": "Severe form of blast caused by Magnaporthe oryzae. It affects panicle neck, leading to empty grains.",
+      "prevention1": "🌱 Grow blast-resistant varieties.",
+      "prevention2": "🌱 Avoid excess nitrogen use.",
+      "prevention3": "🌱 Maintain proper spacing and irrigation.",
+      "treatment1": "💊 Spray systemic fungicides like Tricyclazole.",
+      "treatment2": "💊 Apply foliar sprays at booting stage.",
+      "treatment3": "💊 Use balanced fertilizers with potassium."
+    },
+    "Rice Hispa": {
+      "diseaseName": "Rice Hispa",
+      "description": "An insect pest that scrapes green tissues, leaving white streaks on leaves.",
+      "prevention1": "🌱 Encourage natural predators like lady beetles.",
+      "prevention2": "🌱 Avoid excessive nitrogen fertilizer.",
+      "prevention3": "🌱 Rotate rice with non-host crops.",
+      "treatment1": "💊 Spray Chlorpyrifos or Imidacloprid.",
+      "treatment2": "💊 Handpick and destroy beetles.",
+      "treatment3": "💊 Flood fields to control pupae."
+    },
+    "Sheath Blight": {
+      "diseaseName": "Sheath Blight",
+      "description": "Caused by Rhizoctonia solani fungus. It produces irregular lesions on sheaths that spread in humid conditions.",
+      "prevention1": "🌱 Maintain field hygiene and remove weeds.",
+      "prevention2": "🌱 Avoid water stagnation.",
+      "prevention3": "🌱 Use resistant varieties if available.",
+      "treatment1": "💊 Spray Validamycin or Carbendazim.",
+      "treatment2": "💊 Add neem cake or organic matter to soil.",
+      "treatment3": "💊 Ensure proper spacing for air flow."
+    }
+  }
+}
