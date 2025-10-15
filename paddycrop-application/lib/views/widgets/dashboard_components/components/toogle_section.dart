@@ -41,23 +41,23 @@ class _ToggleSectionComponentState extends State<ToggleSectionComponent> {
                   );
                 },
               ),
-              _buildToggleButton(
-                "disease_screen.toggle_section_B",
-                _currentLabel == "disease_screen.toggle_section_B",
-                () {
-                  setState(
-                    () => _currentLabel = "disease_screen.toggle_section_B",
-                  );
-                },
-              ),
+              // _buildToggleButton(
+              //   "disease_screen.toggle_section_B",
+              //   _currentLabel == "disease_screen.toggle_section_B",
+              //   () {
+              //     setState(
+              //       () => _currentLabel = "disease_screen.toggle_section_B",
+              //     );
+              //   },
+              // ),
             ],
           ),
         ),
         const ResponsiveSizedBox(height: 20),
         Expanded(
-          child: _currentLabel == "disease_screen.toggle_section_A"
-              ? DescriptionSection(data: widget.data)
-              : ImagesSection(data: widget.data),
+          child: 
+              DescriptionSection(data: widget.data)
+              // : ImagesSection(data: widget.data),
         ),
       ],
     );

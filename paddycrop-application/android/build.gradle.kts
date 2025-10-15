@@ -16,6 +16,21 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+subprojects {
+    if (project.name == "flutter_inappwebview_android") {
+        plugins.withId("com.android.library") {
+            extensions.configure<com.android.build.gradle.LibraryExtension> {
+                buildTypes {
+                    getByName("release") {
+                        isMinifyEnabled = false
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

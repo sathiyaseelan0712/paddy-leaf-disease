@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously, deprecated_member_use
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -24,8 +22,54 @@ class VerifyPhotoScreen extends StatefulWidget {
 }
 
 class _VerifyPhotoScreenState extends State<VerifyPhotoScreen> {
-  final _analyzer = MultiModelAnalyzer();
+  final _analyzer = SingleModelAnalyzer();
   bool _isAnalyzing = false;
+
+  Future<void> _uploadImage() async {
+    setState(() {
+      _isAnalyzing = true;
+    });
+
+    try {
+      const String modelPath = 'assets/models/inceptionv3_model.tflite';
+
+      // Call the analyzer with both the image path and the model path
+      final AnalysisResult result = await _analyzer.analyze(
+        widget.imagePath,
+        modelPath,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isAnalyzing = false;
+      });
+      print('Analysis Result: ${result.finalPrediction}, Confidence: ${result.confidence}, Status Code: ${result.statusCode}');
+      final resultData = {
+        'imagePath': widget.imagePath,
+        'response': result.toMap(),
+      };
+
+      context.pop();
+
+      if (result.statusCode == 1) {
+        // Disease
+        context.push(RouteConstants.diseaseScreen, extra: resultData);
+      } else if (result.statusCode == 0) {
+        // Healthy
+        context.push(RouteConstants.happyScreen, extra: resultData);
+      } else {
+        // Not Paddy or Low Confidence
+        context.push(RouteConstants.notPaddyScreen, extra: widget.imagePath);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isAnalyzing = false;
+      });
+      _showErrorDialog('An error occurred during analysis: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +77,6 @@ class _VerifyPhotoScreenState extends State<VerifyPhotoScreen> {
       body: AppGradientBackground(
         child: Stack(
           children: [
-            // Your main UI
             ResponsivePositioned(
               top: 55,
               left: 24,
@@ -45,33 +88,34 @@ class _VerifyPhotoScreenState extends State<VerifyPhotoScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   ResponsiveText(
-                    "verify_photo.title",
+                    "verify_photo.title", // Assuming you use localization
                     style: StyleConstants.customStyle(
                       30,
                       Colors.white,
                       FontWeight.bold,
                     ),
                   ),
-                  ResponsiveSizedBox(height: 40),
+                  const ResponsiveSizedBox(height: 40),
                   _buildImagePreview(),
-                  ResponsiveSizedBox(height: 64),
+                  const ResponsiveSizedBox(height: 64),
                   CustomButton(
                     bgColor: StyleConstants.lightGreenColor,
                     text: "verify_photo.upload",
                     textColor: Colors.white,
                     onPressed: () {
-                      if (_isAnalyzing) return;
-                      _uploadImage(); // This now calls the local analyzer
+                      if (!_isAnalyzing) {
+                        _uploadImage();
+                      }
                     },
                   ),
-                  ResponsiveSizedBox(height: 32),
+                  const ResponsiveSizedBox(height: 32),
                   CustomButton(
                     bgColor: StyleConstants.greenColor,
                     text: "verify_photo.retake",
                     textColor: Colors.white,
                     onPressed: () {
                       context.pop();
-                      context.push(RouteConstants.cameraScreen);
+                      context.pushReplacement(RouteConstants.cameraScreen);
                     },
                   ),
                 ],
@@ -91,7 +135,6 @@ class _VerifyPhotoScreenState extends State<VerifyPhotoScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(height: 16),
             CircularProgressIndicator(
               strokeWidth: 6,
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -109,46 +152,6 @@ class _VerifyPhotoScreenState extends State<VerifyPhotoScreen> {
         ),
       ),
     );
-  }
-
-  // --- THIS METHOD IS COMPLETELY REPLACED ---
-  Future<void> _uploadImage() async {
-    setState(() {
-      _isAnalyzing = true;
-    });
-
-    try {
-      final AnalysisResult result = await _analyzer.analyze(widget.imagePath);
-      print(result.toMap());
-      setState(() {
-        _isAnalyzing = false;
-      });
-
-      context.pop();
-      if (result.statusCode == 1) {
-        // Disease
-        context.push(
-          RouteConstants.diseaseScreen,
-          extra: {'imagePath': widget.imagePath, 'response': result.toMap()},
-        );
-      } else if (result.statusCode == 0) {
-        // Healthy
-        context.push(
-          RouteConstants.happyScreen,
-          extra: {'imagePath': widget.imagePath, 'response': result.toMap()},
-        );
-      } else {
-        // Not Paddy
-        context.push(RouteConstants.notPaddyScreen, 
-          extra: {'imagePath': widget.imagePath, 'response': result.toMap()},
-        );
-      }
-    } catch (e) {
-      setState(() {
-        _isAnalyzing = false;
-      });
-      _showErrorDialog('An error occurred during analysis: $e');
-    }
   }
 
   void _showErrorDialog(String message) {

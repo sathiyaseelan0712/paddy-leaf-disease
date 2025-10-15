@@ -22,6 +22,7 @@ class DiseeaseScreen extends StatefulWidget {
 class DiseeaseScreenState extends State<DiseeaseScreen> {
   @override
   Widget build(BuildContext context) {
+    print(' Data From Disease Components: ${widget.data}');
     return Scaffold(
       body: AppGradientBackground(
         child: Stack(

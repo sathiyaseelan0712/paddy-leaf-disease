@@ -12,8 +12,7 @@ import 'package:paddycrop/views/wrapper_class/responsive_sizedbox.dart';
 class NotpaddyScreen extends StatefulWidget {
   static const String routeName = RouteConstants.notPaddyScreen;
   final String imagePath;
-  final Map<String,dynamic> data;
-  const NotpaddyScreen({super.key, required this.imagePath, required this.data});
+  const NotpaddyScreen({super.key, required this.imagePath});
 
   @override
   State<NotpaddyScreen> createState() => NotpaddyScreenState();

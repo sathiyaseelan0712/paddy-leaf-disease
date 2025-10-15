@@ -135,6 +135,16 @@
       "treatment1": "💊 Spray Validamycin or Carbendazim.",
       "treatment2": "💊 Add neem cake or organic matter to soil.",
       "treatment3": "💊 Ensure proper spacing for air flow."
+    },
+    "Unknown": {
+      "diseaseName": "Unknown Disease",
+      "description": "The disease affecting the paddy leaf could not be identified. Please consult an expert for further analysis.",
+      "prevention1": "🌱 Monitor your plants regularly for any changes.",
+      "prevention2": "🌱 Maintain good agricultural practices.",
+      "prevention3": "🌱 Ensure proper irrigation and fertilization.",
+      "treatment1": "💊 Seek advice from a local agricultural extension officer.",
+      "treatment2": "💊 Consider sending a sample to a plant pathology lab.",
+      "treatment3": "💊 Avoid using unverified pesticides."
     }
   }
 }

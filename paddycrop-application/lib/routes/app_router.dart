@@ -47,8 +47,8 @@ class AppRouter {
       GoRoute(
         path: RouteConstants.notPaddyScreen,
         builder: (context, state) {
-          final e = state.extra as Map<String, dynamic>;
-          return NotpaddyScreen(imagePath: e['imagePath'], data:e['response']);
+          final e = state.extra as String;
+          return NotpaddyScreen(imagePath: e);
         },
       ),
       GoRoute(

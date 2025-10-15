@@ -1,18 +1,17 @@
 import 'dart:io';
-import 'dart:math';
 import 'package:image/image.dart' as img;
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
-// --- DATA CLASSES (No changes here) ---
+// --- DATA CLASSES (Unchanged) ---
 class AnalysisResult {
   final String finalPrediction;
   final double confidence;
   final bool isPaddyLeaf;
   final int statusCode;
   final String reportPath;
-  final Map<String, ModelPrediction> modelPredictions;
+  final ModelPrediction? modelPrediction; // Now holds a single prediction
 
   AnalysisResult({
     required this.finalPrediction,
@@ -20,9 +19,10 @@ class AnalysisResult {
     required this.isPaddyLeaf,
     required this.statusCode,
     required this.reportPath,
-    required this.modelPredictions,
+    this.modelPrediction, // This can be null in case of an error
   });
 
+  // toMap function can be updated if needed, but is omitted for brevity
   Map<String, dynamic> toMap() {
     return {
       'final_prediction': finalPrediction,
@@ -30,9 +30,6 @@ class AnalysisResult {
       'is_paddy_leaf': isPaddyLeaf,
       'status_code': statusCode,
       'report_path': reportPath,
-      'model_predictions': modelPredictions.map(
-        (key, value) => MapEntry(key, value.toMap()),
-      ),
     };
   }
 }
@@ -49,191 +46,108 @@ class ModelPrediction {
     required this.allScores,
     this.error,
   });
-  
-  Map<String, dynamic> toMap() {
-    return {
-      'predicted_class': predictedClass,
-      'confidence': confidence,
-      'all_scores': allScores,
-      'error': error,
-    };
-  }
+
+  // toMap function can be updated if needed, but is omitted for brevity
 }
 
 
-// --- ANALYZER CLASS ---
-class MultiModelAnalyzer {
+// --- NEW SINGLE MODEL ANALYZER CLASS ---
+class SingleModelAnalyzer {
   final logger = Logger();
 
-  final Map<String, String> modelPaths = {
-    "resnet50": 'assets/models/resnet50_model.tflite',
-    "vgg16": 'assets/models/vgg16_model.tflite',
-    "inceptionv3": 'assets/models/inceptionv3_model.tflite',
-    "xception": 'assets/models/xception_model.tflite',
-    "efficientnetb3": 'assets/models/efficientnetb3_model.tflite',
-  };
-
+  // Class labels remain the same as they are tied to the model's output layer
   final List<String> classLabels = [
     'Bacterial Leaf Blight', 'Brown Spot', 'Healthy Rice Leaf', 'Leaf Blast',
     'Leaf scald', 'Narrow Brown Leaf Spot', 'Neck_Blast', 'Rice Hispa', 'Sheath Blight',
   ];
 
-  final List<String> diseaseClasses = [
-    'Bacterial Leaf Blight', 'Brown Spot', 'Leaf Blast', 'Leaf scald',
-    'Narrow Brown Leaf Spot', 'Neck_Blast', 'Rice Hispa', 'Sheath Blight',
-  ];
   final String healthyClass = "Healthy Rice Leaf";
 
-  // --- THIS IS THE ONLY METHOD THAT HAS CHANGED ---
-  Map<String, dynamic> _aggregate(Map<String, ModelPrediction> preds) {
-    final successfulPredictions = preds.values.where((p) => p.error == null).toList();
-    if (successfulPredictions.isEmpty) {
-       return {
-        "is_paddy_leaf": false, "final_prediction": "Unknown",
-        "confidence": 0.0, "status_code": 2,
-      };
-    }
+  /// Analyzes an image using a single specified TensorFlow Lite model.
+  ///
+  /// - [imagePath]: The file path of the image to analyze.
+  /// - [modelAssetPath]: The asset path of the .tflite model file.
+  Future<AnalysisResult> analyze(String imagePath, String modelAssetPath) async {
+    logger.i('🚀 Starting single-model analysis for image: $imagePath');
+    logger.i('📦 Using model: $modelAssetPath');
 
-    // --- Rule #1: Check for a "Corroborated Expert" ---
-    // First, count how many models have high confidence in total.
-    final highConfidenceCount = successfulPredictions.where((p) => p.confidence >= 90).length;
+    try {
+      // 1. Run inference using the specified model
+      final outputScores = await _runModel(imagePath, modelAssetPath);
+      final topPredictionIndex = _argmax(outputScores);
+      final confidence = outputScores[topPredictionIndex] * 100;
+      final predictedClass = classLabels[topPredictionIndex];
 
-    // Sort to find the single best prediction.
-    successfulPredictions.sort((a, b) => b.confidence.compareTo(a.confidence));
-    final bestPrediction = successfulPredictions.first;
+      final modelPrediction = ModelPrediction(
+        predictedClass: predictedClass,
+        confidence: confidence,
+        allScores: outputScores,
+      );
 
-    // The rule now requires at least TWO models to be highly confident.
-    if (highConfidenceCount >= 2 && bestPrediction.confidence >= 90 && diseaseClasses.contains(bestPrediction.predictedClass)) {
-      logger.i('🏆 Corroborated expert model rule triggered. Prediction: "${bestPrediction.predictedClass}"');
-      return {
-        "is_paddy_leaf": true,
-        "final_prediction": bestPrediction.predictedClass,
-        "confidence": bestPrediction.confidence,
-        "status_code": 1, // Disease status code
-      };
-    }
+      logger.d(
+        '✅ Model predicted "$predictedClass" with ${confidence.toStringAsFixed(2)}% confidence.',
+      );
 
-    // --- Rule #2: If no expert, check for a high-confidence GROUP agreement ---
-    logger.i('No corroborated expert winner. Checking for high-confidence group agreement.');
-    final highConfidencePredictions = successfulPredictions.where((p) =>
-        p.confidence >= 90 &&
-        diseaseClasses.contains(p.predictedClass));
+      String finalPrediction;
+      double finalConfidence;
+      bool isPaddyLeaf;
+      int statusCode;
 
-    if (highConfidencePredictions.isNotEmpty) {
-      final highConfidenceCounts = <String, int>{};
-      for (final pred in highConfidencePredictions) {
-        highConfidenceCounts[pred.predictedClass] = (highConfidenceCounts[pred.predictedClass] ?? 0) + 1;
-      }
-      
-      final confidentWinners = highConfidenceCounts.entries.where((e) => e.value >= 2).toList();
-      
-      if (confidentWinners.isNotEmpty) {
-        confidentWinners.sort((a, b) => b.value.compareTo(a.value));
-        final winningLabel = confidentWinners.first.key;
-        final bestConfidence = highConfidencePredictions
-            .where((p) => p.predictedClass == winningLabel)
-            .map((p) => p.confidence)
-            .fold(0.0, max);
-
-        logger.i('🏆 High-confidence group rule triggered. Prediction: "$winningLabel"');
-        return {
-          "is_paddy_leaf": true,
-          "final_prediction": winningLabel,
-          "confidence": bestConfidence,
-          "status_code": 1, // Disease status code
-        };
-      }
-    }
-
-    // --- Rule #3: Fallback to majority vote, WITH A NEW CONFIDENCE CHECK ---
-    logger.i('No high-confidence group winner. Falling back to confident majority vote.');
-    final allCounts = <String, int>{};
-    for (final entry in successfulPredictions) {
-      allCounts[entry.predictedClass] = (allCounts[entry.predictedClass] ?? 0) + 1;
-    }
-
-    final sorted = allCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-    final top = sorted.first;
-
-    // Check for a majority of 3 or more votes
-    if (top.value >= 3) {
-      // Check if at least two of these majority predictions are highly confident
-      final majorityGroup = successfulPredictions.where((p) => p.predictedClass == top.key);
-      final highConfidenceInMajority = majorityGroup.where((p) => p.confidence >= 90).length;
-
-      if (highConfidenceInMajority >= 2) {
-        final bestConf = majorityGroup.map((p) => p.confidence).fold(0.0, max);
-        final label = top.key;
-        final code = label == healthyClass ? 0 : (diseaseClasses.contains(label) ? 1 : 2);
-        
-        logger.i('🏆 Confident majority rule triggered. Prediction: "$label"');
-        return {
-          "is_paddy_leaf": true,
-          "final_prediction": label,
-          "confidence": bestConf,
-          "status_code": code,
-        };
+      // 2. Apply the confidence threshold logic
+      if (confidence > 50.0) {
+        logger.i('👍 Confidence is above 50%. Accepting prediction.');
+        finalPrediction = predictedClass;
+        finalConfidence = confidence;
+        isPaddyLeaf = true; // Assumed to be a paddy leaf if confidence is high
+        statusCode = (predictedClass == healthyClass) ? 0 : 1; // 0 for Healthy, 1 for Disease
       } else {
-        logger.w('Majority vote found for "${top.key}", but it was rejected due to low confidence (found ${highConfidenceInMajority} of 2 required >90% predictions).');
+        logger.w('👎 Confidence is below 50%. Rejecting prediction.');
+        finalPrediction = "Unknown / Low Confidence";
+        finalConfidence = confidence; // Report the low confidence
+        isPaddyLeaf = false;
+        statusCode = 2; // 2 for Unknown/Uncertain
       }
+
+      // 3. Save the report and return the result
+      final reportPath = await _saveReport(imagePath, modelPrediction, {
+        "final_prediction": finalPrediction,
+        "confidence": finalConfidence,
+        "status_code": statusCode,
+      });
+      logger.i('📝 Analysis report saved to: $reportPath');
+
+      return AnalysisResult(
+        finalPrediction: finalPrediction,
+        confidence: finalConfidence,
+        isPaddyLeaf: isPaddyLeaf,
+        statusCode: statusCode,
+        reportPath: reportPath,
+        modelPrediction: modelPrediction,
+      );
+
+    } catch (e) {
+      logger.e('❌ Critical failure during analysis:', error: e);
+      // Return an error result
+      return AnalysisResult(
+        finalPrediction: "Analysis Error",
+        confidence: 0.0,
+        isPaddyLeaf: false,
+        statusCode: -1, // -1 for Critical Error
+        reportPath: '',
+        modelPrediction: ModelPrediction(
+            predictedClass: "Error",
+            confidence: 0.0,
+            allScores: [],
+            error: e.toString()),
+      );
+    } finally {
+      logger.i('🏁 Single-model analysis finished.');
     }
-
-    // --- Final Fallback ---
-    return {
-      "is_paddy_leaf": false,
-      "final_prediction": "Not a paddy leaf",
-      "confidence": 0.0,
-      "status_code": 2,
-    };
   }
 
+  // --- HELPER METHODS (Unchanged from original code) ---
 
-  // --- NO CHANGES TO ANY METHODS BELOW THIS LINE ---
-
-  Future<AnalysisResult> analyze(String imagePath) async {
-    logger.i('🚀 Starting multi-model analysis for image: $imagePath');
-    final predictions = <String, ModelPrediction>{};
-    final analysisFutures = modelPaths.entries.map((entry) async {
-      try {
-        final output = await _runModel(imagePath, entry.value);
-        final predClassIndex = _argmax(output);
-        final confidence = output[predClassIndex] * 100;
-        final predClassName = classLabels[predClassIndex];
-        logger.d(
-          '✅ ${entry.key}: Predicted "$predClassName" with ${confidence.toStringAsFixed(2)}% confidence.',
-        );
-        return MapEntry(entry.key, ModelPrediction(
-          predictedClass: predClassName,
-          confidence: confidence,
-          allScores: output,
-        ));
-      } catch (e) {
-        logger.e('❌ Failed to run model ${entry.key}:', error: e);
-        return MapEntry(entry.key, ModelPrediction(
-          predictedClass: "Error",
-          confidence: 0.0,
-          allScores: [],
-          error: e.toString(),
-        ));
-      }
-    });
-    final results = await Future.wait(analysisFutures);
-    predictions.addEntries(results);
-    final aggregatedResult = _aggregate(predictions);
-    logger.i('🗳️ Aggregation result: "${aggregatedResult["final_prediction"]}" with status code ${aggregatedResult["status_code"]}.');
-    final reportPath = await _saveReport(imagePath, predictions, aggregatedResult);
-    logger.i('📝 Analysis report saved to: $reportPath');
-    logger.i('🏁 Multi-model analysis finished.');
-    return AnalysisResult(
-      finalPrediction: aggregatedResult["final_prediction"]!,
-      confidence: aggregatedResult["confidence"]!,
-      isPaddyLeaf: aggregatedResult["is_paddy_leaf"]!,
-      statusCode: aggregatedResult["status_code"]!,
-      reportPath: reportPath,
-      modelPredictions: predictions,
-    );
-  }
-
+  /// Runs inference on a given image file with a TFLite model.
   Future<List<double>> _runModel(String imagePath, String modelPath) async {
     Interpreter? interpreter;
     try {
@@ -249,10 +163,8 @@ class MultiModelAnalyzer {
         List.generate(inputShape[1], (y) =>
           List.generate(inputShape[2], (x) {
             final pixel = resized.getPixel(x, y);
-            final r = pixel.r / 255.0;
-            final g = pixel.g / 255.0;
-            final b = pixel.b / 255.0;
-            return [r, g, b];
+            // Normalization can be model-specific. This is a common 0-1 scaling.
+            return [pixel.r / 255.0, pixel.g / 255.0, pixel.b / 255.0];
           }),
         ),
       );
@@ -266,6 +178,7 @@ class MultiModelAnalyzer {
     }
   }
 
+  /// Finds the index of the maximum value in a list of doubles.
   int _argmax(List<double> data) {
     if (data.isEmpty) return -1;
     var maxIdx = 0;
@@ -279,30 +192,30 @@ class MultiModelAnalyzer {
     return maxIdx;
   }
 
+  /// Saves the analysis result to a text file.
   Future<String> _saveReport(
     String imgPath,
-    Map<String, ModelPrediction> preds,
+    ModelPrediction pred,
     Map<String, dynamic> result,
   ) async {
     final dir = await getApplicationDocumentsDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final reportPath = "${dir.path}/paddy_analysis_$timestamp.txt";
     final buffer = StringBuffer();
-    buffer.writeln("MULTI-MODEL PADDY LEAF ANALYSIS");
+    buffer.writeln("SINGLE-MODEL PADDY LEAF ANALYSIS");
     buffer.writeln("=" * 40);
     buffer.writeln("Image: $imgPath");
     buffer.writeln("Analysis Time: ${DateTime.now()}");
-    buffer.writeln("Final Prediction: ${result["final_prediction"]}");
+    buffer.writeln("");
+    buffer.writeln("--- FINAL RESULT ---");
+    buffer.writeln("Prediction: ${result["final_prediction"]}");
     buffer.writeln("Confidence: ${result["confidence"].toStringAsFixed(2)}%");
     buffer.writeln("Status Code: ${result["status_code"]}");
     buffer.writeln("");
-    buffer.writeln("MODEL PREDICTIONS:");
-    buffer.writeln("-" * 30);
-    for (final e in preds.entries) {
-      buffer.writeln(
-        "${e.key}: ${e.value.predictedClass} (${e.value.confidence.toStringAsFixed(2)}%)",
-      );
-    }
+    buffer.writeln("--- MODEL DETAILS ---");
+    buffer.writeln(
+        "Raw Prediction: ${pred.predictedClass} (${pred.confidence.toStringAsFixed(2)}%)");
+    
     await File(reportPath).writeAsString(buffer.toString());
     return reportPath;
   }

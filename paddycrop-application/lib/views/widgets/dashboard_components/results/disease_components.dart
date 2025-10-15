@@ -97,7 +97,7 @@ class DiseaseComponentsState extends State<DiseaseComponents> {
   }
 
   Widget _buildDiseaseName() {
-  String diseaseName = widget.data['disease'];
+  String diseaseName = widget.data['final_prediction'] ?? 'Unknown';
 
   return ResponsiveContainer(
     height: 40,

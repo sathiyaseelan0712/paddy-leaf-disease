@@ -37,7 +37,7 @@ class TreatmentScreenState extends State<TreatmentScreen> {
               left: 24,
               child: HeaderComponent(canChangeLanguage: false),
             ),
-            ResponsivePositioned(bottom: 0, child: TreatmentComponents(name: widget.data['disease'])),
+            ResponsivePositioned(bottom: 0, child: TreatmentComponents(name: widget.data['final_prediction'])),
           ],
         ),
       ),

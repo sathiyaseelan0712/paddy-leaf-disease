@@ -1,7 +1,19 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
-    id("kotlin-android")
+    id("org.jetbrains.kotlin.android")
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    println("🔐 Keystore file found. Loading properties...")
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+} else {
+    println("⚠️ No keystore file found. Using default unsigned config.")
 }
 
 android {
@@ -15,7 +27,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -26,9 +38,20 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(keystoreProperties.getProperty("storeFile") ?: "key.jks")
+            storePassword = keystoreProperties.getProperty("storePassword") ?: ""
+            keyAlias = keystoreProperties.getProperty("keyAlias") ?: ""
+            keyPassword = keystoreProperties.getProperty("keyPassword") ?: ""
+        }
+    }
+
     buildTypes {
-        release {
-            signingConfig = signingConfigs.getByName("debug")
+        getByName("release") {
+            isMinifyEnabled = false
+            isShrinkResources = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
